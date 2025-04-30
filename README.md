@@ -1,4 +1,4 @@
-CPSC 335 Semester Group Project
+**CPSC 335 Semester Group Project**
 
 Project 1: Smart Campus Navigator
 
