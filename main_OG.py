@@ -287,14 +287,14 @@ class SmartCampusNavigator:
         self.show_path_btn.bind("<Enter>", lambda e: self.show_path_btn.config(bg=DIJKSTRA_BUTTON_BG_HOVER))
         self.show_path_btn.bind("<Leave>", lambda e: self.show_path_btn.config(bg=DIJKSTRA_BUTTON_BG))
     
-    #setting up the task schedular tab
+    # Setting up the task schedular tab
     def setup_activity_tab(self):
-        self.tasks = [] # for storing classes, and start and end times
+        self.tasks = [] # For storing classes, and start and end times
         title = tk.Label(self.activity_frame, text="Create a Schedule", 
                         font=("Helvetica", 16, "bold"), fg=TITLE_COLOR)
         title.pack(pady=20)
 
-        #inputting classes and times
+        # Inputting classes and times
         selection_frame = ttk.Frame(self.activity_frame)
         selection_frame.pack(pady=10)
 
@@ -302,7 +302,7 @@ class SmartCampusNavigator:
         ttk.Label(selection_frame, text="Start time: ").grid(row=1, column=0, padx=5, pady=5)
         ttk.Label(selection_frame, text="End time: ").grid(row=2, column=0, padx=5, pady=5)
 
-        #input and button
+        # Input and button
         activity_frame = ttk.Frame(self.activity_frame)
         activity_frame.pack(pady=10)
 
@@ -315,14 +315,14 @@ class SmartCampusNavigator:
         end_time_entry = ttk.Entry(selection_frame, width=25)
         end_time_entry.grid(row=2, column=1, padx=5, pady=5)
 
-        #displaying entered tasks
+        # Displaying entered tasks
         activity_frame = ttk.LabelFrame(activity_frame, text="Added Classes")
         activity_frame.grid(row=0, column=1, padx=10)
 
         task_list = tk.Listbox(activity_frame, width=40, height=10, font=("Helvetica", 10))
         task_list.grid(padx=5, pady=5)
         
-        #submitting tasks, still need to fix output display
+        # Dubmitting tasks, still need to fix output display
         def submit_task():
             class_name = class_name_entry.get()
             start_time = start_time_entry.get()
@@ -346,7 +346,7 @@ class SmartCampusNavigator:
         submit_btn.grid(pady=10) 
 
         def activity_selector():
-            sorted_tasks = sorted(self.tasks, key=lambda x:x[2]) #sorting by end time
+            sorted_tasks = sorted(self.tasks, key=lambda x:x[2]) # Sorting by end time
             result = []
             last_end = 0
 
@@ -365,9 +365,6 @@ class SmartCampusNavigator:
 
             for name, start, end in result:
                 result_box.insert(tk.END, f"• {name} ({start} - {end})")
-
-        
-
 
     def search_building(self):
         building = self.search_entry.get()
