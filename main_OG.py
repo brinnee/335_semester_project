@@ -142,16 +142,19 @@ class SmartCampusNavigator:
         self.home_frame = ttk.Frame(self.notebook)
         self.search_frame = ttk.Frame(self.notebook)
         self.dijkstra_frame = ttk.Frame(self.notebook)
+        self.activity_frame = ttk.Frame(self.notebook)
         
         # Add frames to notebook
         self.notebook.add(self.home_frame, text="Home")
         self.notebook.add(self.search_frame, text="Search Buildings")
         self.notebook.add(self.dijkstra_frame, text="Find Shortest Path")
+        self.notebook.add(self.activity_frame, text="Create a Schedule")
         
         # Setup all tabs
         self.setup_home_tab()
         self.setup_search_tab()
         self.setup_dijkstra_tab()
+        self.setup_activity_tab()
 
     def setup_home_tab(self):
         # Create and place widgets for the home tab
@@ -167,6 +170,7 @@ class SmartCampusNavigator:
         • Search for buildings
         • View the campus map
         • Find the shortest path between buildings
+        • Create an ideal schedule
         
         Select a tab above to get started.
         """
@@ -282,6 +286,88 @@ class SmartCampusNavigator:
         # Configure button hover effects
         self.show_path_btn.bind("<Enter>", lambda e: self.show_path_btn.config(bg=DIJKSTRA_BUTTON_BG_HOVER))
         self.show_path_btn.bind("<Leave>", lambda e: self.show_path_btn.config(bg=DIJKSTRA_BUTTON_BG))
+    
+    #setting up the task schedular tab
+    def setup_activity_tab(self):
+        self.tasks = [] # for storing classes, and start and end times
+        title = tk.Label(self.activity_frame, text="Create a Schedule", 
+                        font=("Helvetica", 16, "bold"), fg=TITLE_COLOR)
+        title.pack(pady=20)
+
+        #inputting classes and times
+        selection_frame = ttk.Frame(self.activity_frame)
+        selection_frame.pack(pady=10)
+
+        ttk.Label(selection_frame, text="Class name: ").grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(selection_frame, text="Start time: ").grid(row=1, column=0, padx=5, pady=5)
+        ttk.Label(selection_frame, text="End time: ").grid(row=2, column=0, padx=5, pady=5)
+
+        #input and button
+        activity_frame = ttk.Frame(self.activity_frame)
+        activity_frame.pack(pady=10)
+
+        class_name_entry = ttk.Entry(selection_frame, width=25)
+        class_name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        start_time_entry = ttk.Entry(selection_frame, width=25)
+        start_time_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        end_time_entry = ttk.Entry(selection_frame, width=25)
+        end_time_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        #displaying entered tasks
+        activity_frame = ttk.LabelFrame(activity_frame, text="Added Classes")
+        activity_frame.grid(row=0, column=1, padx=10)
+
+        task_list = tk.Listbox(activity_frame, width=40, height=10, font=("Helvetica", 10))
+        task_list.grid(padx=5, pady=5)
+        
+        #submitting tasks, still need to fix output display
+        def submit_task():
+            class_name = class_name_entry.get()
+            start_time = start_time_entry.get()
+            end_time = end_time_entry.get()
+
+            try:
+                start = float(start_time)
+                end = float(end_time)
+                if end > start:
+                    self.tasks.append((class_name, start, end))
+                    task_list.insert(tk.END, f"• {class_name} ({start} - {end})")
+                    class_name_entry.delete(0, tk.END)
+                    start_time_entry.delete(0, tk.END)
+                    end_time_entry.delete(0, tk.END)
+                else:
+                    print("End time must be after start time.")
+            except ValueError:
+                print("Start/End time must be a number.")
+        
+        submit_btn = ttk.Button(activity_frame, text="Submit Task", command=submit_task)
+        submit_btn.grid(pady=10) 
+
+        def activity_selector():
+            sorted_tasks = sorted(self.tasks, key=lambda x:x[2]) #sorting by end time
+            result = []
+            last_end = 0
+
+            for class_name, start, end in sorted_tasks:
+                 if start >= last_end:
+                    result.append((class_name, start, end))
+                    last_end = end
+            
+            result_win = tk.Toplevel(self.activity_frame)
+            result_win.title("Optimized Schedule")
+
+            tk.Label(result_win, text="Suggested Schedule", font=("Helvetica", 14, "bold")).pack(pady=10)
+
+            result_box = tk.Listbox(result_win, width=40, height=10, font=("Helvetica", 10))
+            result_box.pack(padx=10, pady=10)
+
+            for name, start, end in result:
+                result_box.insert(tk.END, f"• {name} ({start} - {end})")
+
+        
+
 
     def search_building(self):
         building = self.search_entry.get()
