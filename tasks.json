@@ -1,0 +1,70 @@
+[
+{   "title" : "CPSC123",
+    "startTime" : "8:00 AM",
+    "endTime" : "10:00 AM",
+    "location" : "ECS",
+    "priority" : "High"
+},
+{   "title" : "MATH123",
+    "startTime" : "9:00 AM",
+    "endTime" : "10:15 AM",
+    "location" : "MH",
+    "priority" : "High"
+},
+{
+    "title" : "BIO123",
+    "startTime" : "1:00 PM",
+    "endTime" : "2:15 PM",
+    "location" : "MH",
+    "priority" : "High"
+},
+{
+    "title" : "Gym",
+    "startTime" : "12:00 PM",
+    "endTime" : "2:15 PM",
+    "location" : "SRC",
+    "priority" : "Medium"
+},
+{
+    "title" : "Study Time",
+    "startTime" : "3:15 PM",
+    "endTime" : "6:15 PM",
+    "location" : "Pollak",
+    "priority" : "Medium"
+},
+{
+    "title" : "Coffee Break",
+    "startTime" : "12:00 PM",
+    "endTime" : "12:15 PM",
+    "location" : "Pollak",
+    "priority" : "Low"
+},
+{
+    "title" : "Optional Club Meeting",
+    "startTime" : "3:00 PM",
+    "endTime" : "3:45 PM",
+    "location" : "TSU",
+    "priority" : "Low"
+},
+{
+    "title" : "Hanging out with friends",
+    "startTime" : "4:30 PM",
+    "endTime" : "5:30 PM",
+    "location" : "SRC",
+    "priority" : "Low"
+},
+{
+    "title" : "Test",
+    "startTime" : "4",
+    "endTime" : "4",
+    "location" : "no location",
+    "priority" : "low"
+},
+{
+    "title" : "CPSC335",
+    "startTime" : "12:30 PM",
+    "endTime" : "1:15 PM",
+    "location" : "ECS",
+    "priority" :"High"
+}
+]
