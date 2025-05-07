@@ -3,6 +3,44 @@ from tkinter import ttk
 import networkx as nx
 import matplotlib.pyplot as plt
 import heapq
+import json
+from datetime import datetime
+
+#formatting time 
+def parse_time(time_str):
+    return datetime.strptime(time_str.strip(), "%I:%M %p").time()
+
+#loading json tasks
+def load_validate_tasks(filename, valid_locations):
+    with open(filename, "r") as f:
+        data = json.load(f)
+
+    parsed_tasks = []
+    for item in data:
+        title = item.get("title") or item.get("className") or item.get("taskName")
+        start_str = item["startTime"]
+        end_str = item["endTime"]
+        location = item["location"]
+        priority = item.get("priority", "Medium")
+
+        if location not in valid_locations:
+            print(f"invalid location '{location} for task '{title}")
+            continue
+
+        start = parse_time(start_str)
+        end = parse_time(end_str)
+
+        if end <= start:
+            print(f"End time must be after start time for task '{title}'")
+            continue
+
+        parsed_tasks.append({
+            "title": title,
+            "start": start,
+            "end" : end,
+            "location": location
+        })
+    return parsed_tasks
 
 # Configure style settings
 MAIN_BG = "#F5F5F5"  # Main background color
@@ -287,84 +325,149 @@ class SmartCampusNavigator:
         self.show_path_btn.bind("<Enter>", lambda e: self.show_path_btn.config(bg=DIJKSTRA_BUTTON_BG_HOVER))
         self.show_path_btn.bind("<Leave>", lambda e: self.show_path_btn.config(bg=DIJKSTRA_BUTTON_BG))
     
-    # Setting up the task schedular tab
     def setup_activity_tab(self):
-        self.tasks = [] # For storing classes, and start and end times
-        title = tk.Label(self.activity_frame, text="Create a Schedule", 
+        self.error_label = tk.Label(
+        self.activity_frame,
+        text="",
+        fg=ERROR_COLOR,
+        font=("Helvetica", 10, "italic")
+    )
+        self.error_label.grid(row=9, column=0, columnspan=2, pady=5)
+        #checkbox to load json file
+        self.use_json_var = tk.BooleanVar(value=False)
+        load_json_checkbox = ttk.Checkbutton(
+            self.activity_frame,
+            text="Load schedule from JSON file",
+            variable=self.use_json_var,
+            command=lambda: self.reload_tasks(task_list)
+        )
+        load_json_checkbox.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
+
+        # Title
+        title = tk.Label(self.activity_frame, text="Create a Schedule",
                         font=("Helvetica", 16, "bold"), fg=TITLE_COLOR)
-        title.pack(pady=20)
+        title.grid(row=1, column=0, columnspan=2, pady=10)
 
-        # Inputting classes and times
-        selection_frame = ttk.Frame(self.activity_frame)
-        selection_frame.pack(pady=10)
+        # Task list display
+        task_list_frame = ttk.LabelFrame(self.activity_frame, text="Added Classes/Tasks")
+        task_list_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=10)
 
-        ttk.Label(selection_frame, text="Class name: ").grid(row=0, column=0, padx=5, pady=5)
-        ttk.Label(selection_frame, text="Start time: ").grid(row=1, column=0, padx=5, pady=5)
-        ttk.Label(selection_frame, text="End time: ").grid(row=2, column=0, padx=5, pady=5)
+        task_list = tk.Listbox(task_list_frame, width=50, height=8, font=("Helvetica", 10))
+        task_list.grid(row=0, column=0, padx=5, pady=5)
 
-        # Input and button
-        activity_frame = ttk.Frame(self.activity_frame)
-        activity_frame.pack(pady=10)
+        # Load tasks if JSON is selected
+        self.tasks = []
+        if self.use_json_var.get():
+            self.tasks = load_validate_tasks("tasks.json", self.campus.get_buildings())
+            for task in self.tasks:
+                task_list.insert(tk.END, f"• {task['title']} @ {task['location']} ({task['start']} - {task['end']})")
 
-        class_name_entry = ttk.Entry(selection_frame, width=25)
-        class_name_entry.grid(row=0, column=1, padx=5, pady=5)
+        # Input section
+        ttk.Label(self.activity_frame, text="Class name:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
+        class_name_entry = ttk.Entry(self.activity_frame, width=25)
+        class_name_entry.grid(row=3, column=1, padx=5, pady=2)
 
-        start_time_entry = ttk.Entry(selection_frame, width=25)
-        start_time_entry.grid(row=1, column=1, padx=5, pady=5)
+        ttk.Label(self.activity_frame, text="Start time (HH:MM AM or PM):").grid(row=4, column=0, sticky="e", padx=5, pady=2)
+        start_time_entry = ttk.Entry(self.activity_frame, width=25)
+        start_time_entry.grid(row=4, column=1, padx=5, pady=2)
 
-        end_time_entry = ttk.Entry(selection_frame, width=25)
-        end_time_entry.grid(row=2, column=1, padx=5, pady=5)
+        ttk.Label(self.activity_frame, text="End time (HH:MM) AM or PM:").grid(row=5, column=0, sticky="e", padx=5, pady=2)
+        end_time_entry = ttk.Entry(self.activity_frame, width=25)
+        end_time_entry.grid(row=5, column=1, padx=5, pady=2)
 
-        # Displaying entered tasks
-        activity_frame = ttk.LabelFrame(activity_frame, text="Added Classes")
-        activity_frame.grid(row=0, column=1, padx=10)
-
-        task_list = tk.Listbox(activity_frame, width=40, height=10, font=("Helvetica", 10))
-        task_list.grid(padx=5, pady=5)
+        ttk.Label(self.activity_frame, text="Building Name:").grid(row=6, column=0, sticky="e", padx=5, pady=2)
+        building_entry = ttk.Entry(self.activity_frame, width=25)
+        building_entry.grid(row=6, column=1, padx=5, pady=2)
         
-        # Dubmitting tasks, still need to fix output display
+        ttk.Label(self.activity_frame, text="Priority: ").grid(row=7, column=0, sticky="e", padx=5, pady=2)
+        priority_var = tk.StringVar()
+        priority_dropdown = ttk.Combobox(self.activity_frame, textvariable=priority_var, values=["High", "Medium", "Low"], width=23)
+        priority_dropdown.grid(row=7, column=1, padx=5, pady=2)
+        priority_dropdown.set("Medium")
+
+        # Submit Task
         def submit_task():
             class_name = class_name_entry.get()
             start_time = start_time_entry.get()
             end_time = end_time_entry.get()
+            building = building_entry.get()
+            priority = priority_var.get()
+
+            if building not in self.campus.get_buildings():
+                self.error_label.config(text="Invalid building name. Please enter a valid CSUF building.")
+                return
 
             try:
-                start = float(start_time)
-                end = float(end_time)
+                start = parse_time(start_time)
+                end = parse_time(end_time)
                 if end > start:
-                    self.tasks.append((class_name, start, end))
-                    task_list.insert(tk.END, f"• {class_name} ({start} - {end})")
+                    task = {
+                        "title": class_name,
+                        "start": start,
+                        "end": end,
+                        "location": building,
+                        "priority" : priority
+
+                    }
+                    self.tasks.append(task)
+                    start_str = start.strftime("%I:%M %p")
+                    end_str = end.strftime("%I:%M %p")
+                    task_list.insert(tk.END, f"• {class_name} @ {building} ({start_str} - {end_str})")
+
+
+                    # Clear inputs
                     class_name_entry.delete(0, tk.END)
                     start_time_entry.delete(0, tk.END)
                     end_time_entry.delete(0, tk.END)
+                    building_entry.delete(0, tk.END)
                 else:
-                    print("End time must be after start time.")
+                    self.error_label.config(text="End time must be after start time.")
             except ValueError:
-                print("Start/End time must be a number.")
-        
-        submit_btn = ttk.Button(activity_frame, text="Submit Task", command=submit_task)
-        submit_btn.grid(pady=10) 
+                self.error_label.config(text="Invalid time format.")
 
+        submit_btn = ttk.Button(self.activity_frame, text="Submit Task", command=submit_task)
+        submit_btn.grid(row=8, column=0, columnspan=2, pady=10)
+    
+    def reload_tasks(self, task_list):
+        task_list.delete(0, tk.END)
+        self.tasks = []
+        if self.use_json_var.get():
+            self.tasks = load_validate_tasks("tasks.json", self.campus.get_buildings())
+            for task in self.tasks:
+                start_str = task['start'].strftime("%I:%M %p")
+                end_str = task['end'].strftime("%I:%M %p")
+                display = f"• {task['title']} @ {task['location']} ({start_str} - {end_str})"
+                task_list.insert(tk.END, display)
+
+
+        #suggesting schedule, implementing activity algorithm
         def activity_selector():
-            sorted_tasks = sorted(self.tasks, key=lambda x:x[2]) # Sorting by end time
+            sorted_tasks = sorted(self.tasks, key=lambda x: x["end"])
             result = []
-            last_end = 0
+            last_end = None
 
-            for class_name, start, end in sorted_tasks:
-                 if start >= last_end:
-                    result.append((class_name, start, end))
-                    last_end = end
-            
+            for task in sorted_tasks:
+                if last_end is None or task["start"] >= last_end:
+                    result.append(task)
+                    last_end = task["end"]
+
             result_win = tk.Toplevel(self.activity_frame)
-            result_win.title("Optimized Schedule")
+            result_win.title("Recommended Schedule")
 
-            tk.Label(result_win, text="Suggested Schedule", font=("Helvetica", 14, "bold")).pack(pady=10)
+            tk.Label(result_win, text="Recommended Schedule", font=("Helvetica", 14, "bold")).pack(pady=10)
 
-            result_box = tk.Listbox(result_win, width=40, height=10, font=("Helvetica", 10))
+            result_box = tk.Listbox(result_win, width=50, height=10, font=("Helvetica", 10))
             result_box.pack(padx=10, pady=10)
 
-            for name, start, end in result:
-                result_box.insert(tk.END, f"• {name} ({start} - {end})")
+            for task in result:
+                start_str = task['start'].strftime("%I:%M %p")
+                end_str = task['end'].strftime("%I:%M %p")
+                result_box.insert(tk.END, f"• {task['title']} @ {task['location']} ({start_str} - {end_str})")
+
+
+        suggest_btn = ttk.Button(self.activity_frame, text="Suggest Schedule", command=activity_selector)
+        suggest_btn.grid(row=8, column=0, columnspan=2, pady=5)
+
 
     def search_building(self):
         building = self.search_entry.get()
