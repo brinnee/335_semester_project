@@ -38,7 +38,8 @@ def load_validate_tasks(filename, valid_locations):
             "title": title,
             "start": start,
             "end" : end,
-            "location": location
+            "location": location,
+            "priority" : priority
         })
     return parsed_tasks
 
@@ -352,7 +353,7 @@ class SmartCampusNavigator:
         task_list_frame = ttk.LabelFrame(self.activity_frame, text="Added Classes/Tasks")
         task_list_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=10)
 
-        task_list = tk.Listbox(task_list_frame, width=50, height=8, font=("Helvetica", 10))
+        task_list = tk.Listbox(task_list_frame, width=70, height=9, font=("Helvetica", 10))
         task_list.grid(row=0, column=0, padx=5, pady=5)
 
         # Load tasks if JSON is selected
@@ -360,7 +361,7 @@ class SmartCampusNavigator:
         if self.use_json_var.get():
             self.tasks = load_validate_tasks("tasks.json", self.campus.get_buildings())
             for task in self.tasks:
-                task_list.insert(tk.END, f"• {task['title']} @ {task['location']} ({task['start']} - {task['end']})")
+                task_list.insert(tk.END, f"• [{task['priority']}] {task['title']} @ {task['location']} ({task['start']} - {task['end']})")
 
         # Input section
         ttk.Label(self.activity_frame, text="Class name:").grid(row=3, column=0, sticky="e", padx=5, pady=2)
@@ -412,8 +413,7 @@ class SmartCampusNavigator:
                     self.tasks.append(task)
                     start_str = start.strftime("%I:%M %p")
                     end_str = end.strftime("%I:%M %p")
-                    task_list.insert(tk.END, f"• {class_name} @ {building} ({start_str} - {end_str})")
-
+                    task_list.insert(tk.END, f"• {class_name} @ {building} ({start_str} - {end_str}) with {priority} priority")
 
                     # Clear inputs
                     class_name_entry.delete(0, tk.END)
@@ -426,7 +426,7 @@ class SmartCampusNavigator:
                 self.error_label.config(text="Invalid time format.")
 
         submit_btn = ttk.Button(self.activity_frame, text="Submit Task", command=submit_task)
-        submit_btn.grid(row=8, column=0, columnspan=2, pady=10)
+        submit_btn.grid(row=8, column=2, columnspan=2, pady=10)
     
     def reload_tasks(self, task_list):
         task_list.delete(0, tk.END)
@@ -436,13 +436,20 @@ class SmartCampusNavigator:
             for task in self.tasks:
                 start_str = task['start'].strftime("%I:%M %p")
                 end_str = task['end'].strftime("%I:%M %p")
-                display = f"• {task['title']} @ {task['location']} ({start_str} - {end_str})"
+                priority = task.get('priority', 'Medium')
+                display = f"• {task['title']} @ {task['location']} ({start_str} - {end_str} with {priority} priority)"
                 task_list.insert(tk.END, display)
 
 
         #suggesting schedule, implementing activity algorithm
         def activity_selector():
-            sorted_tasks = sorted(self.tasks, key=lambda x: x["end"])
+            mode = self.schedule_mode.get()
+            if mode == "priority":
+                priority_order = {"High": 0, "Medium": 1, "Low": 2}
+                sorted_tasks = sorted(self.tasks, key=lambda x: (priority_order[x["priority"]], x["end"]))
+            else:  # sorts by end time
+                sorted_tasks = sorted(self.tasks, key=lambda x: x["end"])
+
             result = []
             last_end = None
 
@@ -464,9 +471,14 @@ class SmartCampusNavigator:
                 end_str = task['end'].strftime("%I:%M %p")
                 result_box.insert(tk.END, f"• {task['title']} @ {task['location']} ({start_str} - {end_str})")
 
+        self.schedule_mode = tk.StringVar(value="end_time")
 
+        ttk.Label(self.activity_frame, text="Schedule by:").grid(row=10, column=0, sticky="e", padx=5)
+
+        ttk.Radiobutton(self.activity_frame, text="End Time", variable=self.schedule_mode, value="end_time").grid(row=10, column=1, sticky="w")
+        ttk.Radiobutton(self.activity_frame, text="Priority", variable=self.schedule_mode, value="priority").grid(row=11, column=1, sticky="w")
         suggest_btn = ttk.Button(self.activity_frame, text="Suggest Schedule", command=activity_selector)
-        suggest_btn.grid(row=8, column=0, columnspan=2, pady=5)
+        suggest_btn.grid(row=8, column=1, columnspan=2, pady=5)
 
 
     def search_building(self):
